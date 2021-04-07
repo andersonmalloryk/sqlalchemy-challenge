@@ -12,6 +12,8 @@ Found most recent date in the data set and from there retrieved the last 12 mont
 
 Loaded the query results into a Pandas DataFrame and set the index to the date column, sorted by 'date' and plotted using the 'plot' method. 
 
+![RecentYearPrecip.png](Images/RecentYearPrecip.png)
+
 Used Pandas to print the summary statistics for the precipitation data.
 
 ### Station Analysis
@@ -20,9 +22,19 @@ Found the station that logged the most readings. Retrieved the last 12 months of
 
 Loaded query resutls into a Pandas DataFrame and set the index to the date column, sorted by 'date' and generated a histogram of the temperature results.
 
+![MostActiveStationTemps.png](Images/MostActiveStationTemps.png)
+
 Designed a query to calculate the total number of stations in the dataset to find the most active station. 
 
 ## Step 2 - Climate App
 
-Designed a Flask API based on the queries for precipitation and station analysis. 
+Create a Flask app with a series of routes and queries that display specific information. 
+
+- precipitation
+- stations
+- tobs (temperature observations)
+- user input start date
+- user input start and end date
+
+All provide back a json of the data
 
