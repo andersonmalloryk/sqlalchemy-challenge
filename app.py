@@ -41,8 +41,8 @@ def home():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br/>"
-        f"/api/v1.0/<start>/<end>"   
+        f"/api/v1.0/<start_date><br/>"
+        f"/api/v1.0/<start_date>/<end_date>"   
     )
 
 
@@ -119,35 +119,29 @@ def tobs():
 
 
 @app.route("/api/v1.0/<start_date>")
-def start(date = None):
+def start(start_date = None):
 
-    #################################################
-    # Temperature Data Setup
     session = Session(engine)
-        all_tobs = session.query(Measurement.date, Measurement.tobs, Measurement.station)
 
-        all_tobs_data = []
-        for date, tobs in all_tobs:
-            recent_dict = {}
-            recent_dict["date"] = date
-            recent_dict["tobs"] = tobs
-            all_tobs_data.append(recent_dict)
-    #################################################
+    tob_stats_start = session.query(func.max(Measurement.tobs), func.min(Measurement.tobs), func.avg(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).all()
 
-    start_date = date.__format__
-    for date in all_tobs_data:
-        canonicalized = date["date"]
+    return jsonify(list(tob_stats_start))
 
-        if canonicalized == start_date:
-            Start_tob_stats = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs).\
-                filter(Measurement.date >= start_date).all()
+    session.close()
 
-    session.close   
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def start_end(start_date = None, end_date = None):
 
-            return jsonify(list(Start_tob_stats))
+    session = Session(engine)
 
-    return jsonify({"error": f"Date: {date} is not in data."})
+    tob_stats = session.query(func.max(Measurement.tobs), func.min(Measurement.tobs), func.avg(Measurement.tobs)).\
+        filter(Measurement.date >= start_date).\
+        filter(Measurement.date <= end_date).all()
+
+    return jsonify(list(tob_stats))
+
+    session.close()
          
-
 if __name__ == '__main__':
     app.run(debug=True)
