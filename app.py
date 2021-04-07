@@ -4,6 +4,7 @@ import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
+import datetime as dt
 
 from flask import Flask, jsonify
 
@@ -21,6 +22,8 @@ Base.prepare(engine, reflect=True)
 # Save reference to the table
 Measurement = Base.classes.measurement
 Station = Base.classes.station
+
+
 #################################################
 # Flask Setup
 #################################################
@@ -38,8 +41,8 @@ def home():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/20150823<br/>" 
-        f"/api/v1.0/20160823/20170823"  
+        f"/api/v1.0/<start><br/>"
+        f"/api/v1.0/<start>/<end>"   
     )
 
 
@@ -94,12 +97,13 @@ def station():
 def tobs():
     # Create our session (link) from Python to the DB
     session = Session(engine)
-    import datetime as dt
 
     """Return a list of station data"""
     recent_12_mo = dt.date(2017,8,23) - dt.timedelta(days = 365)
     # Query dates and temperatures of most active station for last year    
-    recent = session.query(Measurement.date, Measurement.tobs, Measurement.station).filter(Measurement.date >= recent_12_mo).filter(Measurement.station == "USC00519281").all()
+    recent = session.query(Measurement.date, Measurement.tobs, Measurement.station).\
+        filter(Measurement.date >= recent_12_mo).\
+        filter(Measurement.station == "USC00519281").all()
 
     session.close()
 
@@ -113,27 +117,37 @@ def tobs():
     
     return jsonify(recent_tobs)
 
-@app.route("/api/v1.0/20150823")
-def 20150823():
-    # Create our session (link) from Python to the DB
+
+@app.route("/api/v1.0/<start_date>")
+def start(date = None):
+
+    #################################################
+    # Temperature Data Setup
     session = Session(engine)
-    import datetime as dt
+        all_tobs = session.query(Measurement.date, Measurement.tobs, Measurement.station)
 
-    """Return a list of station data"""
-    start_date = dt.date(2015,8,23)
-    # Find the max, min, and avg  
-    Start_tob_max = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= start_date).max()
-    Start_tob_avg = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= start_date).mean()
-    Start_tob_min = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= start_date).min()
-    
-    session.close()
+        all_tobs_data = []
+        for date, tobs in all_tobs:
+            recent_dict = {}
+            recent_dict["date"] = date
+            recent_dict["tobs"] = tobs
+            all_tobs_data.append(recent_dict)
+    #################################################
 
-    start_tobs = {"TMIN": Start_tob_min, "TAVG": Start_tob_avg, "TMAX": Start_tob_max}
-    
-    return jsonify(start_tobs)
+    start_date = date.__format__
+    for date in all_tobs_data:
+        canonicalized = date["date"]
 
-@app.route("/api/v1.0/20160823/20170823")
-def 20160823/20170823():
+        if canonicalized == start_date:
+            Start_tob_stats = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs).\
+                filter(Measurement.date >= start_date).all()
+
+    session.close   
+
+            return jsonify(list(Start_tob_stats))
+
+    return jsonify({"error": f"Date: {date} is not in data."})
+         
 
 if __name__ == '__main__':
     app.run(debug=True)
